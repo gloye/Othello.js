@@ -1,11 +1,5 @@
 const model = new Array(64).fill(0)
 
-// 初始化
-model[34] = 1
-model[35] = 2
-model[42] = 2
-model[43] = 1
-
 // helper 辅助函数
 const coordinateToIndex = (x, y) => x + y * 8
 const indexToCoordinate = i => [i % 8, (i - (i % 8)) / 8]
@@ -15,6 +9,13 @@ const checkPosition = ([x, y]) => {
   return true
 }
 
+// 初始化
+model[coordinateToIndex(3, 3)] = 2
+model[coordinateToIndex(3, 4)] = 1
+model[coordinateToIndex(4, 3)] = 1
+model[coordinateToIndex(4, 4)] = 2
+
+// 处理
 const actionMap = (position = [0, 0]) => {
   const [x, y] = position
   return new Map([
@@ -23,7 +24,8 @@ const actionMap = (position = [0, 0]) => {
       function leftTop(fn) {
         let [m, n] = [x, y]
         while (m < 8 && n > 0) {
-          if (fn(m++, n--)) break
+          console.log('leftTop')
+          if (!fn(++m, --n)) break
         }
       }
     ],
@@ -32,7 +34,8 @@ const actionMap = (position = [0, 0]) => {
       function left(fn) {
         let [m, n] = [x, y]
         while (m < 8) {
-          if (fn(m++, n)) break
+          console.log('left')
+          if (!fn(m++, n)) break
         }
       }
     ],
@@ -41,6 +44,7 @@ const actionMap = (position = [0, 0]) => {
       function leftBottom(fn) {
         let [m, n] = [x, y]
         while (m < 8 && n < 8) {
+          console.log('leftBottom')
           if (!fn(++m, ++n)) break
         }
       }
@@ -50,7 +54,7 @@ const actionMap = (position = [0, 0]) => {
       function top(fn) {
         let [m, n] = [x, y]
         while (n >= 0) {
-          if (fn(m, n--)) break
+          if (!fn(m, --n)) break
         }
       }
     ],
@@ -59,7 +63,8 @@ const actionMap = (position = [0, 0]) => {
       function bottom(fn) {
         let [m, n] = [x, y]
         while (n < 8) {
-          if (fn(m, n++)) break
+          console.log('bottom')
+          if (!fn(m, n++)) break
         }
       }
     ],
@@ -68,7 +73,7 @@ const actionMap = (position = [0, 0]) => {
       function rightTop(fn) {
         let [m, n] = [x, y]
         while (m >= 0 && n >= 0) {
-          if (fn(m--, n--)) break
+          if (!fn(--m, --n)) break
         }
       }
     ],
@@ -77,7 +82,7 @@ const actionMap = (position = [0, 0]) => {
       function right(fn) {
         let [m, n] = [x, y]
         while (m >= 0) {
-          if (fn(m--, n)) break
+          if (!fn(--m, n)) break
         }
       }
     ],
@@ -86,7 +91,8 @@ const actionMap = (position = [0, 0]) => {
       function rightBottom(fn) {
         let [m, n] = [x, y]
         while (m >= 0 && n < 8) {
-          if (fn(m--, n++)) break
+          console.log('rightBottom')
+          if (!fn(--m, n++)) break
         }
       }
     ]
@@ -96,31 +102,39 @@ const actionMap = (position = [0, 0]) => {
 // 找关联 定边界
 const findDiscsActive = function(i) {
   const [x, y] = indexToCoordinate(i)
-  let discs = [i]
+  let reverseDiscs = [i]
+  let moveDiscs = []
+  let moveIndex = null
   let resolve = false
   function checkStatus(x, y) {
+    console.log(x,y)
     const index = coordinateToIndex(x, y)
-    if (model[index] === 1) {
-      discs.push(index)
+    if (model[index] === 3 - nextStatus) {
+      reverseDiscs.push(index)
       return true
     }
-    if (model[index] === 2) {
+    if (model[index] === nextStatus) {
+      moveDiscs.push(moveIndex)
       resolve = true
     }
+    moveIndex = null
     return false
   }
   const newMap = actionMap([x, y])
   newMap.forEach((handle, key) => {
     if (checkPosition(key)) {
+      moveIndex = coordinateToIndex(key[0], key[1])
       handle && handle(checkStatus)
     }
   })
   if (resolve) {
-    return discs
+    return {
+      moveDiscs,
+      reverseDiscs
+    }
   }
-  return []
+  return null
 }
-
 
 // 下一个
 const nextStatus = 1
@@ -134,10 +148,8 @@ model.forEach((status, index) => {
 // 被改变的集合
 let discs = []
 
-oppositeDiscs.forEach(
+/*discs = [...findDiscsActive(27)]
+ oppositeDiscs.forEach(
   disc => (discs = [...new Set([...discs, ...findDiscsActive(disc)])])
 )
-
-if(!discs.length){
-   nextStatus = 3 - nextStatus
-}
+ */
