@@ -1,147 +1,78 @@
 const model = new Array(64).fill(0)
 
 // helper 辅助函数
-const coordinateToIndex = (x, y) => x + y * 8
+
+const coordinateToIndex = ([x, y]) => x + y * 8
 const indexToCoordinate = i => [i % 8, (i - (i % 8)) / 8]
-const checkPosition = ([x, y]) => {
-  if (x < 0 && x >= 8 && y < 0 && y >= 8) return false // 边界处理
-  if (model[coordinateToIndex(x, y)] !== 0) return false // 非空处理
-  return true
-}
-//TODO: indexToDomIndex
+const indexSwitch = i => ([x, y] = indexToCoordinate(i)) => x + 8 * (7 - y)
 
 // 初始化
-model[coordinateToIndex(3, 3)] = 2
-model[coordinateToIndex(3, 4)] = 1
-model[coordinateToIndex(4, 3)] = 1
-model[coordinateToIndex(4, 4)] = 2
-
-// 处理
-const actionMap = (position = [0, 0]) => {
-  const [x, y] = position
-  return new Map([
-    [
-      [x - 1, y + 1],
-      function leftTop(fn) {
-        let [m, n] = [x, y]
-        while (m < 8 && n > 0) {
-          if (!fn(++m, --n)) break
-        }
-      }
-    ],
-    [
-      [x - 1, y],
-      function left(fn) {
-        let [m, n] = [x, y]
-        while (m < 8) {
-          if (!fn(++m, n)) break
-        }
-      }
-    ],
-    [
-      [x - 1, y - 1],
-      function leftBottom(fn) {
-        let [m, n] = [x, y]
-        while (m < 8 && n < 8) {
-          if (!fn(++m, ++n)) break
-        }
-      }
-    ],
-    [
-      [x, y + 1],
-      function top(fn) {
-        let [m, n] = [x, y]
-        while (n >= 0) {
-          if (!fn(m, --n)) break
-        }
-      }
-    ],
-    [
-      [x, y - 1],
-      function bottom(fn) {
-        let [m, n] = [x, y]
-        while (n < 8) {
-          if (!fn(m, ++n)) break
-        }
-      }
-    ],
-    [
-      [x + 1, y + 1],
-      function rightTop(fn) {
-        let [m, n] = [x, y]
-        while (m >= 0 && n >= 0) {
-          if (!fn(--m, --n)) break
-        }
-      }
-    ],
-    [
-      [x + 1, y],
-      function right(fn) {
-        let [m, n] = [x, y]
-        while (m >= 0) {
-          if (!fn(--m, n)) break
-        }
-      }
-    ],
-    [
-      [x + 1, y - 1],
-      function rightBottom(fn) {
-        let [m, n] = [x, y]
-        while (m >= 0 && n < 8) {
-          if (!fn(--m, ++n)) break
-        }
-      }
-    ]
-  ])
-}
-
-// 找关联 定边界
-const findDiscsActive = function(i) {
-  const [x, y] = indexToCoordinate(i)
-  let reverseDiscs = [i]
-  let preReverseDiscs = []
-  let moveDiscs = []
-  let moveIndex = null
-  function checkStatus(x, y) {
-    const index = coordinateToIndex(x, y)
-    if (model[index] === 3 - nextStatus) {
-      preReverseDiscs.push(index)
-      return true
-    }
-    if (model[index] === nextStatus) {
-      reverseDiscs.concat(preReverseDiscs)
-      moveDiscs.push(moveIndex)
-    }
-    moveIndex = null
-    return false
-  }
-  const newMap = actionMap([x, y])
-  newMap.forEach((handle, key) => {
-    if (checkPosition(key)) {
-      moveIndex = coordinateToIndex(key[0], key[1])
-      handle && handle(checkStatus)
-    }
-  })
-  return {
-    moveDiscs,
-    reverseDiscs
-  }
-}
+model[coordinateToIndex([3, 3])] = 2
+model[coordinateToIndex([3, 4])] = 1
+model[coordinateToIndex([4, 3])] = 1
+model[coordinateToIndex([4, 4])] = 2
 
 // 下一个
 const nextStatus = 1
 
-// 分棋子
-const oppositeDiscs = []
-model.forEach((status, index) => {
-  if (status === 3 - nextStatus) oppositeDiscs.push(index)
+// check 落子位置必定和一枚异色棋子相邻，所以找出所有不同色
+model.forEach((disc, i) => {
+  if (disc === 3 - nextStatus) {
+    const discCoordinate = indexToCoordinate(i)
+    const relItem = checkDirection(discCoordinate)
+  }
 })
 
-// 被改变的集合
-let moveTotal = []
-let reverseTotal = []
-oppositeDiscs.forEach(disc => {
-  const { moveDiscs, reverseDiscs } = findDiscsActive(disc)
-  moveTotal = [...new Set(moveTotal.concat(moveDiscs))]
-  reverseTotal = [...new Set(reverseTotal.concat(reverseDiscs))]
-})
+// 检查坐标是否合法
+function checkCoordinateValid(coordinate) {
+  const [x, y] = coordinate
+  if (x < 0 || x > 8 || y < 0 || y > 8) return false // 边界处理
+  if (model[coordinateToIndex([x, y])] !== 0) return false // 非空处理
+  return true
+}
+
+// check direction 期望返回一个二维数组
+function checkDirection(centerCoordinate) {
+  const [cx, cy] = centerCoordinate
+  let directions = [
+    [-1, -1],
+    [-1, 0],
+    [-1, 1],
+    [0, 1],
+    [0, -1],
+    [1, -1],
+    [1, 0],
+    [1, 1]
+  ]
+  const rel = []
+  for (direction of directions) {
+    let [x, y] = [cx, cy]
+    const sx = x + direction[0]
+    const sy = y - direction[1]
+    const start = [sx, sy]
+    let data = [coordinateToIndex(start), coordinateToIndex([cx, cy])]
+    let directionCanMove = false
+    if (!checkCoordinateValid(start)) continue
+    while (x >= 0 && x < 8 && y >= 0 && y < 8) {
+      x -= direction[0]
+      y -= direction[1]
+      const i = coordinateToIndex([x, y])
+      if (model[i] === 3 - nextStatus) {
+        data.push(i)
+      }
+      if (model[i] === nextStatus) {
+        directionCanMove = true
+        break
+      }
+      if (model[i] === 0) {
+        data = []
+        break
+      }
+    }
+    if (directionCanMove && data.length) {
+      rel.push(data)
+    }
+    directionCanMove = false
+  }
+  return rel
+}

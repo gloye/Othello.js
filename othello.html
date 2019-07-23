@@ -13,6 +13,7 @@
     <script src="othello2.js"></script>
     <script>
       const container = document.getElementById('o-container')
+      container.innerHTML = ''
       const block = document.createDocumentFragment()
       for (let i = 0; i < 64; i++) {
         const cell = document.createElement('div')
@@ -20,14 +21,16 @@
           cell.className = 'o-cell o-cell_black'
         } else if (i === 35 || i === 28) {
           cell.className = 'o-cell o-cell_white'
-        } else if (moveTotal.includes(i)) {
-          cell.className = 'o-cell o-cell_active'
         } else {
           cell.className = 'o-cell'
         }
         block.appendChild(cell)
       }
       container.appendChild(block)
+      container.addEventListener('click', function(e) {
+        let domIndex = [...this.children].indexOf(e.target)
+        let modelIndex = indexSwitch(domIndex)
+      })
     </script>
   </body>
 </html>
