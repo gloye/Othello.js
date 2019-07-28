@@ -13,20 +13,28 @@ model[coordinateToIndex([4, 3])] = 1
 model[coordinateToIndex([4, 4])] = 2
 
 // 下一个
-const nextStatus = 1
+let nextStatus = 1
+let result = []
+let canMove = []
 
 // check 落子位置必定和一枚异色棋子相邻，所以找出所有不同色
-model.forEach((disc, i) => {
-  if (disc === 3 - nextStatus) {
-    const discCoordinate = indexToCoordinate(i)
-    const relItem = checkDirection(discCoordinate)
-  }
-})
+function update() {
+  result = []
+  canMove = []
+  model.forEach((disc, i) => {
+    if (disc === 3 - nextStatus) {
+      const discCoordinate = indexToCoordinate(i)
+      const eachDirection = checkDirection(discCoordinate)
+      result = result.concat(eachDirection)
+      canMove = canMove.concat(eachDirection.map(item => item[0]))
+    }
+  })
+}
 
 // 检查坐标是否合法
 function checkCoordinateValid(coordinate) {
   const [x, y] = coordinate
-  if (x < 0 || x > 8 || y < 0 || y > 8) return false // 边界处理
+  if (x < 0 || x > 7 || y < 0 || y > 7) return false // 边界处理
   if (model[coordinateToIndex([x, y])] !== 0) return false // 非空处理
   return true
 }
@@ -48,7 +56,7 @@ function checkDirection(centerCoordinate) {
   for (direction of directions) {
     let [x, y] = [cx, cy]
     const sx = x + direction[0]
-    const sy = y - direction[1]
+    const sy = y + direction[1]
     const start = [sx, sy]
     let data = [coordinateToIndex(start), coordinateToIndex([cx, cy])]
     let directionCanMove = false
@@ -76,3 +84,5 @@ function checkDirection(centerCoordinate) {
   }
   return rel
 }
+
+update()
